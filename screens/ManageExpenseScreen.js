@@ -1,22 +1,34 @@
-import { useContext, useLayoutEffect, useState } from "react";
-import { Text, View, StyleSheet, TextInput } from "react-native";
+import { useLayoutEffect } from "react";
+import { View, StyleSheet } from "react-native";
 import IconButton from "../components/ui/IconButton";
 import { GlobalStyles } from "../constants/styles";
-import Button from "../components/ui/Button";
-import { ExpensesContext } from "../store/expenses-context";
 import ExpenseForm from "../components/ManageExpense/ExpenseForm";
-import { storeExpense, updateExpense, deleteExpense } from "../util/http";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/ui/ErrorOverlay";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  selectExpenses,
+  selectExpensesError,
+  selectExpensesStatus,
+} from "../store/redux/expenses/selectors";
+import {
+  addExpenseThunk,
+  deleteExpenseThunk,
+  updateExpenseThunk,
+} from "../store/redux/expenses/thunks";
 
 function ManageExpenseScreen({ route, navigation }) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState();
+  const dispatch = useDispatch();
+
+  const status = useSelector(selectExpensesStatus);
+  const expenses = useSelector(selectExpenses);
+  const error = useSelector(selectExpensesError);
+
   const editedExpenseId = route.params?.expenseId;
   const isEditing = !!editedExpenseId;
-  const expensesCtx = useContext(ExpensesContext);
 
-  const selectedExpense = expensesCtx.expenses.find(
+  const selectedExpense = expenses.find(
+    // sebelumnya expensesCtx.expenses.find(
     (expense) => expense.id === editedExpenseId
   );
 
@@ -27,15 +39,9 @@ function ManageExpenseScreen({ route, navigation }) {
   }, [navigation, isEditing]);
 
   async function deleteExpenseHandler() {
-    setIsSubmitting(true);
-    try {
-      await deleteExpense(editedExpenseId);
-      expensesCtx.deleteExpense(editedExpenseId);
-      navigation.goBack();
-    } catch (error) {
-      setError("Failed to delete expense");
-      setIsSubmitting(false);
-    }
+    dispatch(deleteExpenseThunk(editedExpenseId)).then(() =>
+      navigation.goBack()
+    );
   }
 
   function cancelHandler() {
@@ -43,27 +49,16 @@ function ManageExpenseScreen({ route, navigation }) {
   }
 
   async function confirmHandler(expenseData) {
-    setIsSubmitting(true);
-    try {
-      if (isEditing) {
-        await updateExpense(editedExpenseId, expenseData);
-        expensesCtx.updateExpense(editedExpenseId, expenseData);
-      } else {
-        const id = await storeExpense(expenseData);
-        expensesCtx.addExpense({ ...expenseData, id: id });
-      }
-      navigation.goBack();
-    } catch (error) {
-      setError("Could not save data - please try again later!");
-      setIsSubmitting(false);
+    if (isEditing) {
+      dispatch(
+        updateExpenseThunk({ id: editedExpenseId, data: expenseData })
+      ).then(() => navigation.goBack());
+    } else {
+      dispatch(addExpenseThunk(expenseData)).then(() => navigation.goBack());
     }
   }
 
-  function errorHandler() {
-    setError(null);
-  }
-
-  if (error && !isSubmitting) {
+  if (error && status !== "loading") {
     return (
       <ErrorOverlay
         message={error}
@@ -73,7 +68,7 @@ function ManageExpenseScreen({ route, navigation }) {
     );
   }
 
-  if (isSubmitting) {
+  if (status === "loading") {
     return <LoadingOverlay />;
   }
 

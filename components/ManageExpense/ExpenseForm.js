@@ -16,7 +16,7 @@ function ExpenseForm({ submitButtonLabel, onCancel, onSubmit, defaultValues }) {
       isValid: true,
     },
     date: {
-      value: defaultValues ? defaultValues.date : new Date(),
+      value: defaultValues ? new Date(defaultValues.date) : new Date(),
       isValid: true,
     },
     description: {
@@ -51,7 +51,7 @@ function ExpenseForm({ submitButtonLabel, onCancel, onSubmit, defaultValues }) {
   function submitHandler() {
     const expenseData = {
       amount: +inputs.amount.value,
-      date: inputs.date.value,
+      date: inputs.date.value.toISOString(),
       description: inputs.description.value,
     };
 

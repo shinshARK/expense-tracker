@@ -17,7 +17,7 @@ function ExpenseItem({ id, description, date, amount }) {
           <Text style={[styles.textBase, styles.expenseDescription]}>
             {description}
           </Text>
-          <Text style={styles.textBase}>{getFormattedDate(date)}</Text>
+          <Text style={styles.textBase}>{date.slice(0, 10)}</Text>
         </View>
         <View style={styles.amountContainer}>
           {/* <Button title={amount.toString()} /> */}

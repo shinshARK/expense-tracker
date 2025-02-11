@@ -1,41 +1,36 @@
-import { View, Text, StyleSheet } from "react-native";
-import ExpensesOutput from "../components/ExpensesOutput/ExpensesOutput";
-import { useContext, useEffect, useState } from "react";
-import { ExpensesContext } from "../store/expenses-context";
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+
 import { getDateMinusDays } from "../util/date";
 
-import { fetchExpenses } from "../util/http";
+import ExpensesOutput from "../components/ExpensesOutput/ExpensesOutput";
 import LoadingOverlay from "../components/ui/LoadingOverlay";
 import ErrorOverlay from "../components/ui/ErrorOverlay";
+import {
+  selectExpenses,
+  selectExpensesError,
+  selectExpensesStatus,
+} from "../store/redux/expenses/selectors";
+import { fetchExpensesThunk } from "../store/redux/expenses/thunks";
 
 function RecentExpensesScreen() {
-  const [isFetching, setIsFetching] = useState(true);
-  const [error, setError] = useState();
-  const expensesCtx = useContext(ExpensesContext);
+  const dispatch = useDispatch();
 
-  // const [fetchedExpenses, setFetchedExpenses] = useState([]);
-  async function getExpenses() {
-    setIsFetching(true);
-    try {
-      const expenses = await fetchExpenses();
-      expensesCtx.setExpenses(expenses);
-    } catch (error) {
-      setError("Could not fetch expenses!");
-    }
-    setIsFetching(false);
-    // setFetchedExpenses(expenses);
-  }
+  const status = useSelector(selectExpensesStatus);
+  const expenses = useSelector(selectExpenses);
+  const error = useSelector(selectExpensesError);
 
   useEffect(() => {
-    getExpenses();
-  }, []);
+    if (status === "idle") {
+      dispatch(fetchExpensesThunk());
+    }
+  }, [status, dispatch]);
 
   function errorHandler() {
-    setError(null);
-    getExpenses();
+    dispatch(fetchExpensesThunk());
   }
 
-  if (error && !isFetching) {
+  if (error && status !== "loading") {
     return (
       <ErrorOverlay
         message={error}
@@ -45,33 +40,23 @@ function RecentExpensesScreen() {
     );
   }
 
-  if (isFetching) {
+  if (status === "loading") {
     return <LoadingOverlay />;
   }
 
-  const recentExpenses = expensesCtx.expenses.filter((expense) => {
-    const today = new Date();
-    const aWeekAgo = getDateMinusDays(today, 7);
-
-    return expense.date > aWeekAgo;
+  const today = new Date();
+  const aWeekAgo = getDateMinusDays(today, 7);
+  const recentExpenses = expenses.filter((expense) => {
+    return new Date(expense.date) > aWeekAgo;
   });
 
   return (
-    // <View style={styles.rootContainer}>
-    // {/* <Text>This is the recent expenses screen</Text> */}
     <ExpensesOutput
       expenses={recentExpenses}
       expensesPeriod={"Last 7 days"}
       fallBackText={"You havent added any expenses for the last 7 days."}
     />
-    // </View>
   );
 }
 
 export default RecentExpensesScreen;
-
-// const styles = StyleSheet.create({
-//   rootContainer: {
-//     flex: 1,
-//   },
-// });

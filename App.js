@@ -9,7 +9,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import ManageExpenseScreen from "./screens/ManageExpenseScreen";
 import { GlobalStyles } from "./constants/styles";
 import IconButton from "./components/ui/IconButton";
-import ExpensesContextProvider from "./store/expenses-context";
+import { Provider } from "react-redux";
+import { store } from "./store/redux";
 
 const BottomTab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -62,7 +63,7 @@ export default function App() {
   return (
     <>
       <StatusBar style="light"></StatusBar>
-      <ExpensesContextProvider>
+      <Provider store={store}>
         <NavigationContainer>
           <Stack.Navigator
             screenOptions={{
@@ -82,7 +83,7 @@ export default function App() {
             />
           </Stack.Navigator>
         </NavigationContainer>
-      </ExpensesContextProvider>
+      </Provider>
     </>
   );
 }
